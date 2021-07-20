@@ -1,11 +1,11 @@
 # Solidity Programming Course
-## by [Tertiary Infotech Pte. Ltd](https://www.tertiarycourses.com.sg/)
+## by [Tertiary Courses](https://www.tertiarycourses.com.sg/)
 
-These are the exercise files used for [Solidity Programming Course](https://www.tertiarycourses.com.sg/solidity-programming-course.html) course. 
+These are the exercise files used for [Ethereum Smart Contract Programming with Solidity and Web3](https://www.tertiarycourses.com.sg/ethereum-smart-contract-programming-solidity-web3.html) course. 
 
 The course outline can be found in 
 
-https://www.tertiarycourses.com.sg/solidity-programming-course.html
+https://www.tertiarycourses.com.sg/ethereum-smart-contract-programming-solidity-web3.html
 
 https://www.tertiarycourses.com.my/solidity-programming-course-malaysia.html
 
