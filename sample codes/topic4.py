@@ -1,5 +1,207 @@
-## Activity: Deploy Hello Coin Token on Gaanache ##
+# Topic 3: Deployment
 
+# Compile and Deploy contract on Ganache with Python
+import json
+from web3 import Web3
+from solcx import compile_standard, install_solc
+
+# We add these two lines that we forgot from the video!
+print("Installing...")
+install_solc("0.8.9")
+
+# Set up web3 connection with Ganache
+ganache_url = "http://127.0.0.1:7545"
+web3 = Web3(Web3.HTTPProvider(ganache_url))
+chain_id = 1337
+
+# Set a default account to sign transaction
+my_address = "XXXX"
+private_key = 'XXXX'
+
+with open("./SimpleStorage.sol", "r") as file:
+    simple_storage_file = file.read()
+
+# Solidity source code
+compiled_sol = compile_standard(
+    {
+        "language": "Solidity",
+        "sources": {"SimpleStorage.sol": {"content": simple_storage_file}},
+        "settings": {
+            "outputSelection": {
+                "*": {
+                    "*": ["abi", "metadata", "evm.bytecode", "evm.bytecode.sourceMap"]
+                }
+            }
+        },
+    },
+    solc_version="0.8.9",
+)
+ 
+# get bytecode
+bytecode = compiled_sol["contracts"]["SimpleStorage.sol"]["Hello"]["evm"]["bytecode"]["object"]
+
+# get abi
+abi = json.loads(compiled_sol["contracts"]["SimpleStorage.sol"]["Hello"]["metadata"])["output"]["abi"]
+
+# Initialize contract
+contract = web3.eth.contract(abi=abi, bytecode=bytecode)
+
+# Get the latest transaction
+nonce = web3.eth.getTransactionCount(my_address)
+
+# Store value 
+transaction = contract.constructor().buildTransaction(
+    {"chainId": chain_id, "from": my_address, "nonce": nonce}
+)
+
+# Sign the contract transaction
+signed_txn = web3.eth.account.sign_transaction(transaction, private_key=private_key)
+print("Deploying Contract!")
+
+# Send the contract transaction
+tx_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+tx_receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
+print(f"Done! Contract deployed to {tx_receipt.contractAddress}")  
+
+# Test Working with deployed Contracts with Web3
+
+# Access the deployed contract 
+contract = web3.eth.contract(address=tx_receipt.contractAddress, abi=abi)
+
+# Step 1: Create the transaction
+store_transaction = contract.functions.store("Good Afternoon").buildTransaction(
+  {"chainId": chain_id, "from": my_address, "nonce": nonce + 1})
+
+# Step 2: Sign the transaction
+signed_txn = web3.eth.account.sign_transaction(store_transaction, private_key=private_key)
+
+# Step 3: Send the transaction
+tx_greeting_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+tx_receipt = web3.eth.wait_for_transaction_receipt(tx_greeting_hash)
+
+# Retrieve the store value
+print(f'The store value is {contract.functions.retrieve().call()}')
+
+# Activity: Compile and Deploy Contract to Rinkeby testnet
+
+import json
+from web3 import Web3
+from solcx import compile_standard, install_solc
+import os
+
+# We add these two lines that we forgot from the video!
+print("Installing...")
+install_solc("0.8.9")
+
+# Set up web3 connection with Rinkeby
+rinkeby_url = "https://rinkeby-light.eth.linkpool.io/"
+web3 = Web3(Web3.HTTPProvider(rinkeby_url))
+chain_id = 4
+
+# Get your public address and private key from Metamask
+my_address = "XXX"
+private_key = 'XXXX'
+
+with open("./SimpleStorage.sol", "r") as file:
+    simple_storage_file = file.read()
+
+# Solidity source code
+compiled_sol = compile_standard(
+    {
+        "language": "Solidity",
+        "sources": {"SimpleStorage.sol": {"content": simple_storage_file}},
+        "settings": {
+            "outputSelection": {
+                "*": {
+                    "*": ["abi", "metadata", "evm.bytecode", "evm.bytecode.sourceMap"]
+                }
+            }
+        },
+    },
+    solc_version="0.8.9",
+)
+ 
+# get bytecode
+bytecode = compiled_sol["contracts"]["SimpleStorage.sol"]["Hello"]["evm"]["bytecode"]["object"]
+
+# get abi
+abi = json.loads(compiled_sol["contracts"]["SimpleStorage.sol"]["Hello"]["metadata"])["output"]["abi"]
+
+# Initialize contract
+contract = web3.eth.contract(abi=abi, bytecode=bytecode)
+
+# Get the latest transaction
+nonce = web3.eth.getTransactionCount(my_address)
+
+# Step 1: Create  the transaction
+transaction = contract.constructor().buildTransaction(
+    {"chainId": chain_id, "from": my_address, "nonce": nonce})
+
+# Step 2: Sign the transaction
+signed_txn = web3.eth.account.sign_transaction(transaction, private_key=private_key)
+
+# Step 3: Send the transaction
+tx_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+tx_receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
+print(f"Done! Contract deployed to {tx_receipt.contractAddress}")   
+
+# Working with deployed Contracts
+contract = web3.eth.contract(address=tx_receipt.contractAddress, abi=abi)
+
+## Create the transaction
+tx_hash = contract.functions.store("Good Afternoon").buildTransaction(
+    {"chainId": chain_id, "from": my_address, "nonce": nonce + 1})
+
+## Signed the transaction
+signed_txn = web3.eth.account.sign_transaction(tx_hash, private_key=private_key)
+
+## Send the transaction
+tx_greeting_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+tx_receipt = web3.eth.wait_for_transaction_receipt(tx_greeting_hash)
+print(f"Done! Contract deployed to {tx_receipt.contractAddress}")   
+
+## Retrieve the store value
+print(contract.functions.retrieve().call())
+
+
+# Hello Coin
+### Solidity #### 
+// SPDX-License-Identifier: MIT
+pragma solidity >=0.7.0 <0.9.0;
+  
+contract HelloCoin {
+    string public name = 'HelloCoin'; 
+    string public symbol = 'hc'; 
+    
+    mapping (address => uint) balances; 
+    
+    event Transfer(address _from, address _to, uint256 _value); 
+    
+    constructor() { 
+        balances[msg.sender] = 100; 
+        
+    }
+    
+    function mint() public virtual {
+        balances[tx.origin] ++;
+    }
+
+    function sendCoin(address _receiver, uint _amount) public returns(bool sufficient) {
+        if (balances[msg.sender] < _amount) return false;  
+        balances[msg.sender] -= _amount;
+        balances[_receiver] += _amount;
+        
+        emit Transfer(msg.sender, _receiver, _amount); 
+        return true;
+    }
+    function getBalance(address _addr) public view returns(uint) { 
+        //balance check
+        return balances[_addr];  
+    }
+    
+}
+
+### Web3 #### 
 import json
 from web3 import Web3
 
@@ -32,7 +234,7 @@ print(tx_receipt.contractAddress)
 
 # # # # Display the default greeting from the contract
 print('Default contract value: {}'.format(
-    contract.functions.getBalance('0xCF716fAE671155d9663a8D2aC46BbBA4B537265d').call()
+    contract.functions.getBalance('XXXXX').call()
 ))
 
 print(contract.functions.symbol().call())
@@ -46,5 +248,137 @@ web3.eth.waitForTransactionReceipt(tx_hash)
 
 # # Display the new greeting value
 print('Updated contract value: {}'.format(
-    contract.functions.getBalance('0xCF716fAE671155d9663a8D2aC46BbBA4B537265d').call()
+    contract.functions.getBalance('XXXX).call()
 ))
+
+# Truffle
+
+## Hello Solidity script
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity >=0.7.0 <0.9.0;
+
+contract Hello {
+    uint256 public myNum;
+    
+    function store(uint256 _myNum) public {
+         myNum = _myNum;
+    }
+    
+    function retrieve() public view returns(uint256) {
+        return myNum;
+    }
+   
+}
+
+## Migration script
+const Hello= artifacts.require("hello");
+module.exports = function (deployer) {
+  deployer.deploy(Hello);
+};
+
+## Testing
+Hello.deployed().then(function(instance) {return instance.store(255) });
+Hello.deployed().then(function(instance) {return instance.retrieve() });
+
+## Activity: 
+
+## Adoption.sol
+pragma solidity ^0.5.0;
+contract Adoption {
+    address[16] public adopters;
+    // Adopting a pet
+    function adopt(uint petId) public returns (uint) {
+        require(petId >= 0 && petId <= 15);
+        adopters[petId] = msg.sender;
+        return petId;
+        }
+    // Retrieving the adopters
+    function getAdopters() public view returns (address[16] memory) {
+        return adopters;
+        }
+   }
+
+### Migration
+
+var Adoption = artifacts.require("Adoption");
+
+module.exports = function(deployer) {
+  deployer.deploy(Adoption);
+};
+
+### Remove the multi-line comment from within initWeb3 and replace it with the following:
+
+// Modern dapp browsers...
+if (window.ethereum) {
+  App.web3Provider = window.ethereum;
+  try {
+    // Request account access
+    await window.ethereum.enable();
+  } catch (error) {
+    // User denied account access...
+    console.error("User denied account access")
+  }
+}
+// Legacy dapp browsers...
+else if (window.web3) {
+  App.web3Provider = window.web3.currentProvider;
+}
+// If no injected web3 instance is detected, fall back to Ganache
+else {
+  App.web3Provider = new Web3.providers.HttpProvider('http://localhost:7545');
+}
+web3 = new Web3(App.web3Provider);
+
+### Still in /src/js/app.js, remove the multi-line comment from within initContract and replace it with the following:
+$.getJSON('Adoption.json', function(data) {
+  // Get the necessary contract artifact file and instantiate it with @truffle/contract
+  var AdoptionArtifact = data;
+  App.contracts.Adoption = TruffleContract(AdoptionArtifact);
+
+  // Set the provider for our contract
+  App.contracts.Adoption.setProvider(App.web3Provider);
+
+  // Use our contract to retrieve and mark the adopted pets
+  return App.markAdopted();
+});
+
+### Still in /src/js/app.js, remove the multi-line comment from markAdopted and replace it with the following:
+
+var adoptionInstance;
+
+App.contracts.Adoption.deployed().then(function(instance) {
+  adoptionInstance = instance;
+
+  return adoptionInstance.getAdopters.call();
+}).then(function(adopters) {
+  for (i = 0; i < adopters.length; i++) {
+    if (adopters[i] !== '0x0000000000000000000000000000000000000000') {
+      $('.panel-pet').eq(i).find('button').text('Success').attr('disabled', true);
+    }
+  }
+}).catch(function(err) {
+  console.log(err.message);
+});
+
+### Still in /src/js/app.js, remove the multi-line comment from handleAdopt and replace it with the following:
+
+var adoptionInstance;
+
+web3.eth.getAccounts(function(error, accounts) {
+  if (error) {
+    console.log(error);
+  }
+
+  var account = accounts[0];
+
+  App.contracts.Adoption.deployed().then(function(instance) {
+    adoptionInstance = instance;
+
+    // Execute adopt as a transaction by sending account
+    return adoptionInstance.adopt(petId, {from: account});
+  }).then(function(result) {
+    return App.markAdopted();
+  }).catch(function(err) {
+    console.log(err.message);
+  });
+});
